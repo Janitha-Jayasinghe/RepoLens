@@ -1,0 +1,28 @@
+# Dependencies and generated output
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+coverage/
+dist/
+*.tsbuildinfo
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.local
+# Editor and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Test and packaging artifacts
+htmlcov/
+*.egg-info/
+playwright-report/
+test-results/

@@ -1,0 +1,11 @@
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
+import type { ComparisonDatum } from '../../services/comparison';
+import { formatCount } from '../../services/format';
+function PairTooltip({ active, payload, unit }: TooltipContentProps & { unit: 'count' | 'percent' }) {
+  if (!active || !payload?.length) return null;
+  return <div className="chart-tooltip"><strong>{payload[0]?.payload?.name}</strong>{payload.map(item => <p key={String(item.dataKey)}>{String(item.name)}: {typeof item.value === 'number' ? unit === 'percent' ? item.value.toFixed(2) + '%' : formatCount(item.value) : 'Not available'}</p>)}</div>;
+}
+export function ComparisonChart({ data, left, right, percent = false }: { data: ComparisonDatum[]; left: string; right: string; percent?: boolean }) {
+  return <><div className="comparison-chart" style={{ height: Math.max(250, data.length * 52 + 45) }}><ResponsiveContainer width="100%" height="100%" minWidth={0}><BarChart data={data} layout="vertical" accessibilityLayer margin={{ top: 8, right: 12, left: 0, bottom: 8 }}><CartesianGrid stroke="var(--border)" horizontal={false} strokeDasharray="3 3" /><XAxis type="number" domain={percent ? [0, 100] : [0, 'auto']} allowDecimals={percent} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted)', fontSize: 10 }} tickFormatter={value => percent ? `${value}%` : new Intl.NumberFormat('en-US', { notation: 'compact' }).format(Number(value))} /><YAxis type="category" dataKey="name" width={90} interval={0} tickLine={false} axisLine={false} tick={{ fill: 'var(--foreground)', fontSize: 10 }} /><Tooltip content={props => <PairTooltip {...props} unit={percent ? 'percent' : 'count'} />} cursor={{ fill: 'var(--hover)' }} isAnimationActive={false} /><Bar dataKey="left" name={left} fill="var(--accent)" isAnimationActive={false} activeBar={{ stroke: 'var(--foreground)' }} /><Bar dataKey="right" name={right} fill="var(--foreground)" fillOpacity={0.65} isAnimationActive={false} activeBar={{ stroke: 'var(--foreground)' }} /></BarChart></ResponsiveContainer></div><div className="work-chart-legend"><span><i style={{ background: 'var(--accent)' }} />{left}</span><span><i style={{ background: 'var(--foreground)' }} />{right}</span></div></>;
+}

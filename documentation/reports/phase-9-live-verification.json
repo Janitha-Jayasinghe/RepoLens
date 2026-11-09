@@ -1,0 +1,38 @@
+[
+  {
+    "repository": "octocat/Hello-World",
+    "id": "1b97580a-1bff-4e4b-b6f7-499842249cc2",
+    "analyzed_at": "2026-11-09T07:46:41.584905Z",
+    "stars": 3917,
+    "forks": 7428,
+    "collection_complete": true,
+    "commits": {
+      "complete": true
+    },
+    "health": null
+  },
+  {
+    "repository": "vuejs/core",
+    "id": "2d482b59-ad80-40cc-8f76-f9f13d4c79c6",
+    "analyzed_at": "2026-11-09T07:46:42.823648Z",
+    "stars": 54872,
+    "forks": 9284,
+    "collection_complete": true,
+    "commits": {
+      "complete": true
+    },
+    "health": 84
+  },
+  {
+    "repository": "vuejs/core",
+    "id": "2d482b59-ad80-40cc-8f76-f9f13d4c79c6",
+    "analyzed_at": "2026-11-09T07:46:42.823648Z",
+    "stars": 54872,
+    "forks": 9284,
+    "collection_complete": true,
+    "commits": {
+      "complete": true
+    },
+    "health": 84
+  }
+]

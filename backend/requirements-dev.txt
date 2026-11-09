@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=8,<10
+pypdf>=7,<8
+pymupdf>=1.26,<2

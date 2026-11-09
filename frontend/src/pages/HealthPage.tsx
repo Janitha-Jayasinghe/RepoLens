@@ -1,0 +1,35 @@
+import { useCallback, useEffect, useRef } from 'react';
+import { Activity, AlertCircle, CheckCircle2, CircleHelp, ExternalLink, ListChecks, RefreshCw } from 'lucide-react';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { useRepository } from '../hooks/useRepository';
+import { fetchHealth } from '../services/health';
+import { ApiError } from '../services/api';
+import { formatTimestamp } from '../services/format';
+import type { HealthFactor } from '../types/health';
+import { AnalyticsState } from '../components/analytics/AnalyticsState';
+import { HealthGauge } from '../components/analytics/HealthGauge';
+import { Badge, Button, Card } from '../components/ui/primitives';
+
+export function HealthPage() {
+  const refreshRequested = useRef(false);
+  const { reportRateLimit } = useRepository();
+  const fetcher = useCallback((repo: string, signal?: AbortSignal) => { const refresh = refreshRequested.current; refreshRequested.current = false; return fetchHealth(repo, signal, refresh); }, []);
+  const resource = useAnalytics(fetcher, 'maintenance-v1');
+  const data = resource.status === 'success' ? resource.data : null;
+  useEffect(() => { if (data?.rate_limited && data.retry_after) reportRateLimit(new ApiError('GitHub rate limit interrupted maintenance evidence collection.', 'github_rate_limited', 429, data.retry_after)); }, [data, reportRateLimit]);
+  function refresh() { refreshRequested.current = true; resource.retry(); }
+  const heading = <div className="page-heading"><div><p className="eyebrow">MAINTENANCE SIGNALS, WITH CONTEXT</p><h1>Repository Health</h1><p className="page-description">An explainable maintenance heuristic. Not an objective source-code quality score.</p></div><Badge>Transparent rules</Badge></div>;
+  if (resource.status !== 'success') return <>{heading}<AnalyticsState {...resource} retry={refresh} label="Maintenance assessment" /></>;
+  const result = resource.data;
+  return <>{heading}<Card className="health-hero" aria-label="Maintenance assessment"><HealthGauge score={result.score} /><div className="health-hero-copy"><div className="card-title-row"><h2>{result.status === 'complete' ? 'Maintenance-signal score' : 'Assessment incomplete'}</h2><Badge>{result.status === 'complete' ? 'All 6 factors assessed' : 'Missing evidence'}</Badge></div><p>{result.status === 'complete' ? 'The score is the sum of the six documented factor points below. It reflects selected maintenance signals, not correctness, security, or source-code quality.' : 'No overall score is assigned because one or more factors could not be assessed. Missing data receives neither invented points nor an automatic zero.'}</p><dl className="health-summary"><div><dt>Verified points</dt><dd>{result.observed_points} / {result.available_weight} assessed weight</dd></div><div><dt>Possible score bounds</dt><dd>{result.lower_bound === result.upper_bound ? result.lower_bound : `${result.lower_bound}-${result.upper_bound}`} / 100</dd></div></dl>{result.status === 'incomplete' && <p className="health-bounds-note">Bounds are mathematical possibilities, not a predicted or normalized score. The circular display remains unscored.</p>}<Button className="health-refresh" onClick={refresh} disabled={resource.retrySeconds > 0}><RefreshCw size={15} aria-hidden="true" />{resource.retrySeconds > 0 ? `Retry in ${resource.retrySeconds}s` : 'Refresh assessment'}</Button></div></Card>
+    <div className="health-method-banner"><Activity size={17} aria-hidden="true" /><p>Stable, mature, archived, or direct-commit projects can have lower activity without needing changes. Interpret every factor against the project's goals.</p></div>
+    <section aria-labelledby="health-factors-heading"><div className="health-section-heading"><h2 id="health-factors-heading">Factor breakdown</h2><span>Fixed weights - 100 possible points</span></div><div className="health-factor-grid">{result.factors.map(factor => <FactorCard key={factor.id} factor={factor} />)}</div></section>
+    <div className="health-actions-grid"><Card aria-label="Maintenance suggestions"><div className="section-heading"><ListChecks size={19} aria-hidden="true" /><h2>Maintenance suggestions</h2></div><p>Review these only where they fit the project's intended workflow.</p>{result.maintenance_suggestions.length ? <ul className="health-suggestions">{result.maintenance_suggestions.map(suggestion => <li key={suggestion}>{suggestion}</li>)}</ul> : <p>All assessed factors received their full points. This does not establish code quality or replace a project review.</p>}</Card><Card aria-label="Evidence gaps"><div className="section-heading"><CircleHelp size={19} aria-hidden="true" /><h2>Evidence gaps</h2></div>{result.data_suggestions.length ? <><p>Resolve missing data before relying on an overall assessment.</p><ul className="health-suggestions">{result.data_suggestions.map(suggestion => <li key={suggestion}>{suggestion}</li>)}</ul></> : <p>Every factor had enough evidence under this methodology. Source coverage and sampling limits still apply.</p>}</Card></div>
+    <Card className="health-methodology" aria-label="Scoring methodology"><h2>Methodology and limits</h2><p>Version: <code>{result.methodology_version}</code>. A complete score is the sum of earned points; weights total 100. Incomplete bounds are verified points through verified points plus unassessed weight. No missing factors are reweighted. Recency bands use exact elapsed time; displayed ages are rounded.</p><ul className="health-suggestions">{result.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul></Card>
+    <div className="analytics-provenance"><span>{result.cached ? 'Cached' : 'Fresh'} assessment | Retrieved {formatTimestamp(result.analyzed_at)}</span><span>{result.cache_expires_at ? `Cache expires ${formatTimestamp(result.cache_expires_at)}` : 'Incomplete assessments are not cached'}</span></div>
+  </>;
+}
+function FactorCard({ factor }: { factor: HealthFactor }) {
+  const unavailable = factor.score === null;
+  return <Card className="health-factor" aria-label={factor.label}><div className="health-factor-title"><h3>{factor.label}</h3>{unavailable ? <AlertCircle size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}</div><div className="health-factor-points"><strong>{unavailable ? 'Unscored' : `${factor.score} / ${factor.weight}`}</strong><span>{factor.weight}% weight</span></div><div className={`health-factor-track ${unavailable ? 'is-unavailable' : ''}`} aria-hidden="true">{!unavailable && <span style={{ width: `${factor.score! / factor.weight * 100}%` }} />}</div><p>{factor.explanation}</p>{factor.evidence.length > 0 && <ul className="health-evidence">{factor.evidence.map(evidence => <li key={evidence}>{evidence}</li>)}</ul>}<details className="health-factor-rule"><summary>Scoring rule</summary><p>{factor.rule}</p></details><div className="health-factor-sources">{factor.source_urls.map((url, index) => <a key={url} href={url} target="_blank" rel="noreferrer">Source {index + 1}<ExternalLink size={11} aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>)}</div></Card>;
+}
