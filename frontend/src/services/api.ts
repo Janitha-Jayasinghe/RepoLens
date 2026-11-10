@@ -1,6 +1,6 @@
 import type { AnalysisResponse, ApiErrorDetail } from '../types/repository';
 
-const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim() || 'http://127.0.0.1:8000';
+const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim() ||'http://127.0.0.1:8000';
 const parsedUrl = new URL(configuredUrl);
 if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error('VITE_API_BASE_URL must use HTTP or HTTPS.');
 export const API_BASE_URL = configuredUrl.replace(/\/+$/, '');
